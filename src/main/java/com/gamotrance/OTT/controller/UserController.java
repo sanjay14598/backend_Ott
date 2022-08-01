@@ -94,8 +94,10 @@ public class UserController {
 	private final UserServicesImplimentation salesRepository;
 	private final TransctionSErvices transctionSErvices;
 	private final OtpServices otpServices;
-	private static String MID = "mBSVRT27943668214901";
-	private static String MercahntKey = "AL5eo2xV_yOwMLIf";
+	private static String MID = "GnqWZs60135668160054";
+	private static String MercahntKey = "rr82qw5TMLHKd@Zw";
+	//private static String MID = "mBSVRT27943668214901";
+	//private static String MercahntKey = "AL5eo2xV_yOwMLIf";
 	private static String INDUSTRY_TYPE_ID = "Retail";
 	private static String CHANNLE_ID = "WAP";
 	private static String WEBSITE = "DEFAULT";

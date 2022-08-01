@@ -43,25 +43,25 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	
 	
 	
-	/*
-	 * http.httpBasic().disable().csrf().disable().sessionManagement()
-	 * .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-	 * .and().authorizeRequests() .antMatchers("/User/login").permitAll()
-	 * .antMatchers("/User/register").permitAll()
-	 * .antMatchers("/User/updateUser").permitAll()
-	 * .antMatchers("/User/getPasswordCheeck").permitAll()
-	 * .antMatchers("/User/getPhoneVerify").permitAll()///updatePassword
-	 * .antMatchers("/User/updatePassword").permitAll()//
-	 * .antMatchers("/swagger-ui.html/**").permitAll()
-	 * .antMatchers("/DashBoardController/**").hasAuthority("USER")
-	 * .antMatchers("/Video/**").hasAuthority("USER")
-	 * .antMatchers("/User/**").hasAuthority("USER")
-	 * .antMatchers("/RentMovieController/**").hasAuthority("USER")
-	 * .antMatchers("/Plan/**").hasAuthority("USER")
-	 * .anyRequest().authenticated().and().csrf() .disable().exceptionHandling()
-	 * .authenticationEntryPoint(unauthorizedEntryPoint()).and() .apply(new
-	 * JwtConfigurer(jwtTokenProvider));
-	 */
+	
+//	  http.httpBasic().disable().csrf().disable().sessionManagement()
+//	  .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//	  .and().authorizeRequests() .antMatchers("/User/login").permitAll()
+//	  .antMatchers("/User/register").permitAll()
+//	  .antMatchers("/User/updateUser").permitAll()
+//	  .antMatchers("/User/getPasswordCheeck").permitAll()
+//	  .antMatchers("/User/getPhoneVerify").permitAll()///updatePassword
+//	  .antMatchers("/User/updatePassword").permitAll()//
+//	  .antMatchers("/swagger-ui.html/**").permitAll()
+//	  .antMatchers("/DashBoardController/**").hasAuthority("USER")
+//	  .antMatchers("/Video/**").hasAuthority("USER")
+//	  .antMatchers("/User/**").hasAuthority("USER")
+//	  .antMatchers("/RentMovieController/**").hasAuthority("USER")
+//	  .antMatchers("/Plan/**").hasAuthority("USER")
+//	  .anyRequest().authenticated().and().csrf() .disable().exceptionHandling()
+//	  .authenticationEntryPoint(unauthorizedEntryPoint()).and() .apply(new
+//	  JwtConfigurer(jwtTokenProvider));
+//	 
 	 
 	 
 	 
@@ -70,13 +70,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	
 	
-	
-	  @Override public void configure(WebSecurity web) throws Exception {
-	  web.ignoring().antMatchers("/swagger-resources/**")//
-	  .antMatchers("/swagger-ui.html/**")// .antMatchers("/configuration/**")//
-	  .antMatchers("/webjars/**")// .antMatchers("/public")
-	  .antMatchers("/resources/**", "/static/**", "/css/**", "/js/**",
-	  "/images/**"); }
+//	
+//	  @Override public void configure(WebSecurity web) throws Exception {
+//	  web.ignoring().antMatchers("/swagger-resources/**")//
+//	  .antMatchers("/swagger-ui.html/**")// .antMatchers("/configuration/**")//
+//	  .antMatchers("/webjars/**")// .antMatchers("/public")
+//	  .antMatchers("/resources/**", "/static/**", "/css/**", "/js/**",
+//	  "/images/**"); }
 	 
 	 
 	 
