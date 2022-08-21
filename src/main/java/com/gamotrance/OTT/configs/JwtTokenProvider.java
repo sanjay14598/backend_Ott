@@ -59,19 +59,6 @@ public class JwtTokenProvider {
 				.compact();
 	}
 
-//    public String doGenerateRefreshToken(Map<String, Object> claims, String subject) {
-//    	Calendar c= Calendar.getInstance();
-//    	c.add(Calendar.DATE, 30);
-////        Claims claims = Jwts.claims().setSubject(username);
-////        claims.put("roles", set);
-//        Date now = new Date();
-//        Date ct=c.getTime();
-//        Date validity = new Date(ct.getTime() + validityInMilliseconds);
-//		return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-//				.setExpiration(validity)
-//				.signWith(SignatureAlgorithm.HS512, secretKey).compact();
-//
-//	}
 	public Authentication getAuthentication(String token) {
 		UserDetails userDetails = this.userDetailsService.loadUserByUsername(getUsername(token));
 		return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());

@@ -94,10 +94,8 @@ public class UserController {
 	private final UserServicesImplimentation salesRepository;
 	private final TransctionSErvices transctionSErvices;
 	private final OtpServices otpServices;
-	private static String MID = "GnqWZs60135668160054";
-	private static String MercahntKey = "rr82qw5TMLHKd@Zw";
-	//private static String MID = "mBSVRT27943668214901";
-	//private static String MercahntKey = "AL5eo2xV_yOwMLIf";
+	private static String MID = "GnqWZs60135668160054";  //use Paytm MID
+	private static String MercahntKey = "rr82qw5TMLHKd@Zw"; //use Paytm accessToken
 	private static String INDUSTRY_TYPE_ID = "Retail";
 	private static String CHANNLE_ID = "WAP";
 	private static String WEBSITE = "DEFAULT";
@@ -119,8 +117,11 @@ public class UserController {
 	private CustomUserDetailsService userService;
 	private PlanServices plServices;
 
-	public UserController(PlanServices plServices, OtpServices otpServices, CustomUserDetailsService userService,
-			UserServicesImplimentation salesRepository, TransctionSErvices transctionSErvices,
+	public UserController(PlanServices plServices,
+			OtpServices otpServices,
+			CustomUserDetailsService userService,
+			UserServicesImplimentation salesRepository,
+			TransctionSErvices transctionSErvices,
 			FileStorageService fileStorageService) {
 		this.salesRepository = salesRepository;
 		this.userService = userService;
@@ -129,74 +130,217 @@ public class UserController {
 		this.fileStorageService = fileStorageService;
 		this.transctionSErvices = transctionSErvices;
 	}
-
-	@ApiOperation(value = "Make a GET request to upload the file", produces = "application/json", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "The POST call is Successful"),
-			@ApiResponse(code = 500, message = "The POST call is Failed"),
-			@ApiResponse(code = 404, message = "The API could not be found") })
-	@RequestMapping(value = "/getValidateUser/{name}/{password}", method = RequestMethod.GET)
+	
+	@SuppressWarnings("rawtypes")
+	@PostMapping("/login")
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User getValidateUser(@PathVariable String name, @PathVariable String password) {
-		LOG.info("Getting all users.");
-		return salesRepository.getValidate(name, password);
-	}
+	public ResponseEntity login(@RequestBody AuthBody data) {
+		try {
 
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "The POST call is Successful"),
-			@ApiResponse(code = 500, message = "The POST call is Failed"),
-			@ApiResponse(code = 404, message = "The API could not be found") })
-	@RequestMapping(value = "/getValidateUserWithDevice/", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity<?> getValidateUserWithDevice(@RequestBody LoginCont device, UriComponentsBuilder ucBuilder) {
-		LOG.info("Getting all users." + device.getUserName() + "" + device.getPassword() + " \n" + device);
-		// return salesRepository.getValidate(name, password);
-
-		User user = salesRepository.getValidate(device.getUserName(), device.getPassword());
-		if (user != null) {
-			if (user.getDevices() == null) {
-				List<Device> devices = new ArrayList<Device>();
-				devices.add(device.getDevice());
-				user.setDevices(devices);
-				salesRepository.updateUser(user);
-				return new ResponseEntity<User>(salesRepository.getValidate(device.getUserName(), device.getPassword()),
-						HttpStatus.ACCEPTED);
+			String username = data.getEmail();
+			User loginUser = salesRepository.getUserByPhone(username);
+			
+			if(null == loginUser) {
+				Map<Object, Object> model = new HashMap<>();
+				model.put("code", 201);
+				model.put("status", false);
+				model.put("message", "User not found with " + loginUser.getPhone() +" mobile number");
+			} 
+			
+			if (loginUser.getPassword().equalsIgnoreCase("key")) {
+				Map<Object, Object> model = new HashMap<>();
+				model.put("code", 204);
+				model.put("status", true);
+				model.put("message", "Please update your password");
+				return ok(model);
 			}
-
-			else if (user.getUserType().equals(UserType.SIXMONTHS) || user.getUserType().equals(UserType.ONEYEAR)
-					|| user.getUserType().equals(UserType.ONEMONTH)
-					|| user.getUserType().equals(UserType.THREEMONTHS)) {
-				if (user.getDevices().size() >= 1) {
-					return new ResponseEntity(
-							new CustomErrorType("This Device is Login with Device" + user.getDevices().get(0).getBrand()
-									+ " Device Name" + user.getDevices().get(0).getDeviceName()),
-							HttpStatus.CONFLICT);
-				} else {
-					List<Device> devices = user.getDevices();
-					devices.add(device.getDevice());
-					user.setDevices(devices);
-					salesRepository.updateUser(user);
-					return new ResponseEntity<User>(
-							salesRepository.getValidate(device.getUserName(), device.getPassword()),
-							HttpStatus.ACCEPTED);
-				}
+			
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			
+			if (!encoder.matches(data.getPassword(), loginUser.getPassword())) {
+				Map<Object, Object> model = new HashMap<>();
+				model.put("code", 202);
+				model.put("status", true);
+				model.put("message", "Password Not Match");
+				return ok(model);
 			}
+		
+			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, data.getPassword()));
+			String token = jwtTokenProvider.createToken(username, userService.findUserByPhone(username).getRoles());
+			Map<Object, Object> model = new HashMap<>();
+			System.out.println(token);
 
-		} else {
-			return new ResponseEntity(new CustomErrorType("We Don't Found any user with this account  "),
-					HttpStatus.CONFLICT);
+			model.put("user", salesRepository.getUserByPhone(username));
+			model.put("code", 200);
+			model.put("message", "OK");
+			model.put("token", token);
+			System.out.println(model.toString());
+			return ok(model);
+		} catch (AuthenticationException e) {
+			Map<Object, Object> model = new HashMap<>();
+			model.put("code", 500);
+			model.put("status", false);
+			model.put("message", "Something went worng please try again");
+			throw new BadCredentialsException("Invalid email/password supplied");
 		}
-		return new ResponseEntity<User>(salesRepository.getValidate(device.getUserName(), device.getPassword()),
-				HttpStatus.ACCEPTED);
 	}
-
-	@RequestMapping(value = "/checkUserIfExist/{email}", method = RequestMethod.GET)
+	
+	@SuppressWarnings("rawtypes")
+	@PostMapping("/createAccount")
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public boolean checkUserIfExist(@PathVariable String email) {
-		LOG.info("Getting all users.");
-		return salesRepository.checkIfUserExist(email);
+	public ResponseEntity createAccount(@RequestBody User user) {
+		User userExists = userService.findUserByPhone(user.getPhone());
+		if (null != userExists) {
+			throw new BadCredentialsException("User with mobile number: " + user.getPhone() + " already exists");
+		}
+		userService.saveUser(user);
+		Map<Object, Object> model = new HashMap<>();
+		model.put("message", "User registered successfully");
+		return ok(model);
+	}
+	
+	@RequestMapping(value = "/getUserByID/{id}/", method = RequestMethod.GET)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public User getUserByID(@PathVariable int id) {
+		
+		return salesRepository.getSubUser(id);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@RequestMapping(value = "/getUserByPhone/{phone}", method = RequestMethod.GET)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public ResponseEntity getUseerPhone(@PathVariable String phone) {
+		Map<Object, Object> model = new HashMap<>();
+		boolean ok = salesRepository.checkIfUserExist(phone);
+		if (ok) {
+			User u = salesRepository.getPhoneVerify(phone);
+			model.put("user", u);
+			model.put("status", ok);
+			model.put("code", 200);
+		} else {
+			model.put("user", null);
+			model.put("exist", ok);
+			model.put("ResponseCode", 201);
+		}
+		return ok(model);
+	}
+	
+	@RequestMapping(value = "/generateOtp/{phone}/", method = RequestMethod.POST)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public String UserOtpRequest(@PathVariable String phone) {
+
+		String otp = OttUtil.OTP(4);
+		LOG.info("get realted users." + phone + " the otp is:" + otp);
+		otpServices.addAppUpdate(new Otp(phone.hashCode(), otp, phone));
+		final String uri = "http://jskbulkmarketing.in/app/smsapi/index.php?key=460CA3C5F1005F&campaign=1&routeid=46&type=text&contacts="
+				+ phone + "&senderid=ANGORR&msg=Your%20OTP%20to%20register%2Faccess%20Angoor%20digital%20is%20" + otp
+				+ ".%20It%20will%20be%20valid%20for%203%20minutes.%20-%20Angoor%2FSapna%20films&template_id=1207162444792537966";
+		System.out.println(uri);
+		String result = "";
+		try {
+			HttpPost post = new HttpPost(uri);
+
+			try (CloseableHttpClient httpClient = HttpClients.createDefault();
+					CloseableHttpResponse response = httpClient.execute(post)) {
+
+				System.out.println(EntityUtils.toString(response.getEntity()));
+				result = EntityUtils.toString(response.getEntity());
+			}
+		} catch (Exception e) {
+
+		}
+		return result;
 	}
 
-	@RequestMapping(value = "/getPaymentOrder", method = RequestMethod.POST)
-	public User getPaymentOrder(@RequestBody PaymentCapture pameCapture) throws Exception {
+	@RequestMapping(value = "/validateOtp/", method = RequestMethod.POST)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public ResponseEntity<?> validateOtp(@RequestBody Otp otp, UriComponentsBuilder ucBuilder) {
+		LOG.info("get realted users." + otp.getMobile() + " the otp is:" + otp.getOtp());
+		if (salesRepository.getPhoneExist("+91" + otp.getMobile())) {
+			if (otpServices.getValidate(otp.getMobile(), otp.getOtp())) {
+				return new ResponseEntity<User>(salesRepository.getPhoneVerify(otp.getMobile()), HttpStatus.ACCEPTED);
+			} else {
+				return new ResponseEntity<>(new CustomErrorType("Worng Otp !!!"), HttpStatus.CONFLICT);
+			}
+		} else {
+			return new ResponseEntity<User>(
+					salesRepository.createAccount(
+							new User(otp.getMobile().hashCode(), "+91" + otp.getMobile(), UserType.BASIC)),
+					HttpStatus.CREATED);
+		}
+	}
+	
+	@RequestMapping(value = "/checkPassword", method = RequestMethod.POST)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public ResponseEntity<?> checkPassword(@RequestBody AuthBody ab) {
+		LOG.info("get realted users." + ab.getEmail());
+		User user = salesRepository.getSubUser(Integer.valueOf(ab.getEmail()));
+		Map<Object, Object> model = new HashMap<>();
+		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+		if (encoder.matches(ab.getPassword(), user.getPassword())) {
+			model.put("statusCode", 206);
+			model.put("status", "update");
+			model.put("statusMobile", user.getPhone());
+		} else {
+			model.put("statusCode", 200);
+			model.put("status", "updated");
+			model.put("statusMobile", user.getPhone());
+		}
+		return ok(model);
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@RequestMapping(value = "/updatePassword", method = RequestMethod.POST)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public ResponseEntity updatePassword(@RequestBody AuthBody phone) {
+		LOG.info("get phone Verify users." + phone);
+		User user1 = salesRepository.getPhoneVerify(phone.getEmail());
+		
+		if(null == user1) {
+			Map<Object, Object> model = new HashMap<>();
+			model.put("message", "User not found");
+		}
+
+		userService.updateUser(user1, phone.getPassword());
+		Map<Object, Object> model = new HashMap<>();
+		model.put("message", "User registered successfully");
+		return ok(model);
+	}
+
+	@RequestMapping(value = "/deleteUser", method = RequestMethod.DELETE)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public boolean deleteUser(@RequestBody User user) {
+		LOG.info("user." + user);
+		salesRepository.deleteUser(user);
+		return true;
+	}
+
+	@RequestMapping(value = "/updateUser", method = RequestMethod.PATCH)
+	@ResponseBody
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public User updateUser(@RequestBody User user) {
+		LOG.info("user." + user);
+		return salesRepository.updateUser(user);
+	}
+
+	@RequestMapping(value = "/updateUserVideoRestc/{id}/{age}", method = RequestMethod.PATCH)
+	@ResponseBody
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public User updateUserVideoRestc(@PathVariable int id, @PathVariable int age) {
+
+		return salesRepository.updateUserAgeRestc(id, age);
+	}
+
+	@RequestMapping(value = "/getAllUser", method = RequestMethod.GET)
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public List<User> getAllUser() {
+		LOG.info("user.");
+		return salesRepository.getAllUser();
+	}
+
+
+	@RequestMapping(value = "/subscribeFromRazorpay", method = RequestMethod.POST)
+	public User subscribeFromRazorpay(@RequestBody PaymentCapture pameCapture) throws Exception {
 		LOG.info("Saving user." + pameCapture.getPaymentid());
 		RazorpayClient razorpay = new RazorpayClient(pameCapture.getApikey(), pameCapture.getSecKey());
 		Payment payment = null;
@@ -235,254 +379,10 @@ public class UserController {
 		}
 		return user;
 	}
-
-	@RequestMapping(value = "/createUserByPhone", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity<?> createUserByPhone(@RequestBody User user, UriComponentsBuilder ucBuilder) {
-		if (salesRepository.getPhoneExist(user.getPhone())) {
-			return new ResponseEntity(
-					new CustomErrorType("Unable to create. A User with name " + user.getPhone() + " already exist."),
-					HttpStatus.CONFLICT);
-		}
-		salesRepository.createAccount(user);
-		HttpHeaders headers = new HttpHeaders();
-		headers.setLocation(ucBuilder.path("/api/getUserById/{id}").buildAndExpand(user.getId()).toUri());
-		return new ResponseEntity<User>(salesRepository.createAccount(user), HttpStatus.CREATED);
-	}
-
-	@PostMapping("/createUserByEmail")
-	public ResponseEntity<?> createUserByEmail(@RequestBody User user, UriComponentsBuilder ucBuilder) {
-		try {
-			Optional<User> user1 = Optional.ofNullable(userRepo.findByEmail(user.getEmail()));
-			if (user1.isPresent()) {
-				return new ResponseEntity(
-						new CustomErrorType("Unable to create  this " + user.getEmail() + " already exist."),
-						HttpStatus.CONFLICT);
-			}
-			salesRepository.createAccount(user);
-			HttpHeaders headers = new HttpHeaders();
-			headers.setLocation(ucBuilder.path("/api/getUserById/{id}").buildAndExpand(user.getId()).toUri());
-			return new ResponseEntity<>(salesRepository.createAccount(user), HttpStatus.CREATED);
-		} catch (Exception e) {
-			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
-
-	@RequestMapping(value = "/addUserFromExcel", method = RequestMethod.POST)
-	public User addUserFromExcel(@RequestBody User user) {
-		LOG.info("Saving user." + user.getEmail());
-		return salesRepository.createAccount(user);
-	}
-
-	@RequestMapping(value = "/deleteUser", method = RequestMethod.DELETE)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public boolean deleteUser(@RequestBody User user) {
-		LOG.info("user." + user);
-		salesRepository.deleteUser(user);
-		return true;
-	}
-
-	@RequestMapping(value = "/getUser/{email}/", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User getUser(@PathVariable String email) {
-		LOG.info("user." + email);
-		return salesRepository.getUser(email);
-	}
-
-	@GetMapping("/getUserByEmail/{email}")
-	public ResponseEntity<User> getUserByEmail(@PathVariable("email") String email) {
-		Optional<User> user = Optional.ofNullable(userRepo.findByEmail(email));
-		if (user.isPresent()) {
-			return new ResponseEntity<>(userRepo.findByEmail(email), HttpStatus.OK);
-		} else {
-			return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
-		}
-	}
-
-	@RequestMapping(value = "/updateUser", method = RequestMethod.PATCH)
+	
+	@RequestMapping(value = "/generateChecksum", method = RequestMethod.POST)
 	@ResponseBody
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User updateUser(@RequestBody User user) {
-		LOG.info("user." + user);
-		return salesRepository.updateUser(user);
-	}
-
-	@RequestMapping(value = "/updateUserVideoRestc/{id}/{age}", method = RequestMethod.PATCH)
-	@ResponseBody
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User updateUserVideoRestc(@PathVariable int id, @PathVariable int age) {
-
-		return salesRepository.updateUserAgeRestc(id, age);
-	}
-
-	@RequestMapping(value = "/getAllUser", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<User> getAllUser() {
-		LOG.info("user.");
-		return salesRepository.getAllUser();
-	}
-
-	@RequestMapping(value = "/getUserByID/{id}/", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User getSubUser(@PathVariable int id) {
-		LOG.info("get realted users." + id);
-		return salesRepository.getSubUser(id);
-	}
-
-	@RequestMapping(value = "/getPasswordCheeck", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity getPasswordCheeck(@RequestBody AuthBody ab) {
-		LOG.info("get realted users." + ab.getEmail());
-		User user = salesRepository.getSubUser(Integer.valueOf(ab.getEmail()));
-		Map<Object, Object> model = new HashMap<>();
-		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-		if (encoder.matches(ab.getPassword(), user.getPassword())) {
-			model.put("statusCode", 206);
-			model.put("status", "update");
-			model.put("statusMobile", user.getPhone());
-		} else {
-			model.put("statusCode", 200);
-			model.put("status", "updated");
-			model.put("statusMobile", user.getPhone());
-		}
-		return ok(model);
-	}
-
-	@RequestMapping(value = "/getUserByuserType/{type}/", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<User> getUserByuserType(@PathVariable String type) {
-		LOG.info("get realted users." + type);
-		return salesRepository.getUserByuserType(type);
-	}
-
-	@SuppressWarnings("rawtypes")
-	@RequestMapping(value = "/getUserByPhone/{phone}", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity getUserByPhone(@PathVariable String phone) {
-		LOG.info("get phone Verify users." + phone);
-		// boolean isAuthenticated = BCrypt.checkpw(candidatePassword, passwordHash);
-		Map<Object, Object> model = new HashMap<>();
-		model.put("User", salesRepository.getPhoneVerify(phone));
-		return ok(model);
-	}
-
-	@SuppressWarnings("rawtypes")
-	@RequestMapping(value = "/getPhoneVerify", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity getPhoneVerify(@RequestBody AuthBody phone) {
-		LOG.info("get phone Verify users." + phone);
-		// boolean isAuthenticated = BCrypt.checkpw(candidatePassword, passwordHash);
-		Map<Object, Object> model = new HashMap<>();
-		boolean b = salesRepository.checkIfUserExist(phone.getEmail());
-		if (b) {
-			User u = salesRepository.getPhoneVerify(phone.getEmail());
-			model.put("user", u);
-			model.put("exist", b);
-			model.put("ResponseCode", 20);
-		} else {
-			model.put("user", null);
-			model.put("exist", b);
-			model.put("ResponseCode", 209);
-		}
-		return ok(model);
-	}
-
-	@SuppressWarnings("rawtypes")
-	@RequestMapping(value = "/getUseerPhone/{phone}", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity getUseerPhone(@PathVariable String phone) {
-		LOG.info("get phone Verify users." + phone);
-		// boolean isAuthenticated = BCrypt.checkpw(candidatePassword, passwordHash);
-		Map<Object, Object> model = new HashMap<>();
-		boolean b = salesRepository.checkIfUserExist(phone);
-		if (b) {
-			User u = salesRepository.getPhoneVerify(phone);
-			model.put("user", u);
-			model.put("exist", b);
-			model.put("ResponseCode", 20);
-		} else {
-			model.put("user", null);
-			model.put("exist", b);
-			model.put("ResponseCode", 209);
-		}
-		return ok(model);
-	}
-
-	@SuppressWarnings("rawtypes")
-	@RequestMapping(value = "/updatePassword", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity updatePassword(@RequestBody AuthBody phone) {
-		LOG.info("get phone Verify users." + phone);
-		User user1 = salesRepository.getPhoneVerify(phone.getEmail());
-
-		userService.updateUser(user1, phone.getPassword());
-		Map<Object, Object> model = new HashMap<>();
-		model.put("message", "User registered successfully");
-		return ok(model);
-	}
-
-	@RequestMapping(value = "/UserOtpVerification/{email}/{otp}/", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User UserOtpVerification(@PathVariable String email, @PathVariable String otp) {
-		LOG.info("get realted users." + email + " the otp is:" + otp);
-		return salesRepository.getUserOtpVerification(email, otp);
-	}
-
-	@RequestMapping(value = "/generateOtp/{phone}/", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public String UserOtpRequest(@PathVariable String phone) {
-
-		String otp = OttUtil.OTP(4);
-		LOG.info("get realted users." + phone + " the otp is:" + otp);
-		otpServices.addAppUpdate(new Otp(phone.hashCode(), otp, phone));
-		final String uri = "http://jskbulkmarketing.in/app/smsapi/index.php?key=460CA3C5F1005F&campaign=1&routeid=46&type=text&contacts="
-				+ phone + "&senderid=ANGORR&msg=Your%20OTP%20to%20register%2Faccess%20Angoor%20digital%20is%20" + otp
-				+ ".%20It%20will%20be%20valid%20for%203%20minutes.%20-%20Angoor%2FSapna%20films&template_id=1207162444792537966";
-		System.out.println(uri);
-		String result = "";
-		try {
-			HttpPost post = new HttpPost(uri);
-
-			try (CloseableHttpClient httpClient = HttpClients.createDefault();
-					CloseableHttpResponse response = httpClient.execute(post)) {
-
-				System.out.println(EntityUtils.toString(response.getEntity()));
-				result = EntityUtils.toString(response.getEntity());
-			}
-		} catch (Exception e) {
-
-		}
-		return result;
-	}
-
-	@RequestMapping(value = "/validateOtp/", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity<?> validateOtp(@RequestBody Otp otp, UriComponentsBuilder ucBuilder) {
-		LOG.info("get realted users." + otp.getMobile() + " the otp is:" + otp.getOtp());
-		if (salesRepository.getPhoneExist("+91" + otp.getMobile())) {
-			if (otpServices.getValidate(otp.getMobile(), otp.getOtp())) {
-				return new ResponseEntity<User>(salesRepository.getPhoneVerify(otp.getMobile()), HttpStatus.ACCEPTED);
-			} else {
-				return new ResponseEntity(new CustomErrorType("Worng Otp !!!"), HttpStatus.CONFLICT);
-			}
-		} else {
-			return new ResponseEntity<User>(
-					salesRepository.createAccount(
-							new User(otp.getMobile().hashCode(), "+91" + otp.getMobile(), UserType.BASIC)),
-					HttpStatus.CREATED);
-		}
-	}
-
-	@RequestMapping(value = "/getAllOtp", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<Otp> getAllOtp() {
-		return otpServices.getOtpList();
-
-	}
-
-	@RequestMapping(value = "/getchechsum", method = RequestMethod.POST)
-	@ResponseBody
-	public Checksum getChecksum(@RequestBody Checksum checksum) {
+	public Checksum generateChecksum(@RequestBody Checksum checksum) {
 		LOG.info("get realted users.");
 		TreeMap<String, String> paramMap = new TreeMap<String, String>();
 		paramMap.put("MID", MID);
@@ -510,9 +410,9 @@ public class UserController {
 
 	}
 
-	@RequestMapping(value = "/getchechsumtest", method = RequestMethod.POST)
+	@RequestMapping(value = "/validateChecksum", method = RequestMethod.POST)
 	@ResponseBody
-	public Checksum getChecksumtest(@RequestBody Checksum checksum1) throws Exception {
+	public Checksum validateChecksum(@RequestBody Checksum checksum1) throws Exception {
 
 		JSONObject paytmParams = new JSONObject();
 		String val = "[{\"mode\":\"BALANCE\",\"channels\":[]},{\"mode\":\"PPBL\",\"channels\":[]},{\"mode\":\"UPI\",\"channels\":[“UPI”,\"UPIPUSH\",\"UPIPUSHEXPRESS\"]},{\"mode\":“CREDIT_CARD\",\"channels\":[“VISA”,\"MASTER\",\"AMEX\"]},{\"mode\":“DEBIT_CARD\",\"channels\":[“VISA”,\"MASTER\",\"AMEX\"]},{\"mode\":“NET_BANKING\",\"channels\":[]},{\"mode\":\"EMI\",\"channels\":[“VISA”,\"MASTER\",\"AMEX\"]},{\"mode\":“PAYTM_DIGITAL_CREDIT”,\"channels\":[]}]";
@@ -645,9 +545,9 @@ public class UserController {
 		}
 	}
 
-	@RequestMapping(value = "/addTransction", method = RequestMethod.POST)
+	@RequestMapping(value = "/subscribeFromPaytm", method = RequestMethod.POST)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public User addTransction(@RequestBody Transcation transcation) {
+	public User subscribeFromPaytm(@RequestBody Transcation transcation) {
 		LOG.info("Transction user : " + transcation.toString());
 		User user = salesRepository.getSubUser(Integer.valueOf(transcation.getUserId()));
 		LOG.info("Transction user." + transcation.toString() + "user " + user.toString());
@@ -670,286 +570,7 @@ public class UserController {
 		System.out.println("out pass");
 		return salesRepository.updateUserWithId(user);
 	}
-
-	@RequestMapping(value = "/deleteTransction", method = RequestMethod.DELETE)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public String deleteTransction(@RequestBody Transcation transcation) {
-		LOG.info("user." + transcation.toString());
-		transctionSErvices.deleteTranction(transcation);
-		return null;
-	}
-
-	@RequestMapping(value = "/getTransctionById/{id}/", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public Transcation getTransction(@PathVariable String id) {
-		LOG.info("user." + id);
-		return transctionSErvices.getTranctionById(id);
-	}
-
-	@RequestMapping(value = "/getAllTransction/", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<Transcation> getAllTransction() {
-		LOG.info("user.");
-		return transctionSErvices.getAllTranction();
-	}
-
-	@RequestMapping(value = "/getUserbyPayments/", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<User> getUserbyPayments() {
-		LOG.info("user.");
-		return salesRepository.getAllUserbypaymentsRep();
-	}
-
-	@RequestMapping(value = "/deleteAllUser", method = RequestMethod.DELETE)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public boolean deleteTransction() {
-		// LOG.info( "user."+transcation.getId());
-
-		return salesRepository.deleteAllUser();
-	}
-
-	@RequestMapping(value = "/getUserByDate/{days}", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<User> getUserByDate(@PathVariable long days) {
-		// LOG.info( "user."+transcation.getId());
-
-		return salesRepository.getUserByDate(LocalDate.now().minusDays(days));
-	}
-
-	@RequestMapping(value = "/getUserByDateSubscription/{days}", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public List<User> getUserByDateSubscription(@PathVariable long days) {
-		// LOG.info( "user."+transcation.getId());
-
-		return salesRepository.getUserByDateSubscription(LocalDate.now().minusDays(days));
-	}
-
-	@RequestMapping(value = "/getSync", method = RequestMethod.GET)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public boolean getSync() {
-		// LOG.info( "user."+transcation.getId());
-
-		return salesRepository.deleteAllUser();
-	}
-
-	@RequestMapping(value = "/deleteDevice/{deviceId}/{id}", method = RequestMethod.DELETE)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity<?> deleteDevice(@PathVariable int deviceId, @PathVariable int id,
-			UriComponentsBuilder ucBuilder) {
-		// LOG.info( "user."+transcation.getId());
-		User user = salesRepository.getSubUser(id);
-		if (user != null) {
-			if (user.getDevices() != null) {
-				List<Device> dev = new ArrayList<Device>();
-				for (Device d : user.getDevices()) {
-					if (deviceId == d.getId()) {
-
-					} else {
-						dev.add(d);
-					}
-				}
-				user.setDevices(dev);
-			}
-		}
-		return new ResponseEntity<User>(salesRepository.updateUser(user), HttpStatus.ACCEPTED);
-
-	}
-
-	@RequestMapping(value = "/SyncAllUser", method = RequestMethod.PATCH)
-	public boolean SyncAllUser(@RequestBody Genre url) {
-		// LOG.info( "user."+transcation.getId());
-		RestTemplate restTemplate = new RestTemplate();
-		ResponseEntity<List<User>> responseEntity = restTemplate.exchange(url.getGenreName(), HttpMethod.GET, null,
-				new ParameterizedTypeReference<List<User>>() {
-				});
-		List<User> pojoObjList = responseEntity.getBody();
-		System.out.println(pojoObjList.size());
-		salesRepository.syncAll(pojoObjList);
-		return true;
-		// return salesRepository.deleteAllUser();
-	}
-
-	@SuppressWarnings("rawtypes")
-	@PostMapping("/login")
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity login(@RequestBody AuthBody data) {
-		try {
-
-			String username = data.getEmail();
-			User u = salesRepository.getUserByPhone(username);
-			if (u.getPassword().equalsIgnoreCase("key")) {
-				Map<Object, Object> model = new HashMap<>();
-				model.put("rescode", 208);
-				model.put("susmsg", "Please Update Password");
-				return ok(model);
-			}
-			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-			if (!encoder.matches(data.getPassword(), u.getPassword())) {
-				Map<Object, Object> model = new HashMap<>();
-				model.put("rescode", 209);
-				model.put("susmsg", "Password Not Match");
-				return ok(model);
-			} else if (u == null) {
-				Map<Object, Object> model = new HashMap<>();
-				model.put("rescode", 209);
-				model.put("susmsg", "Username Not Found");
-			}
-			System.out.println(username + "   " + data.getPassword());
-			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, data.getPassword()));
-			String token = jwtTokenProvider.createToken(username, userService.findUserByPhone(username).getRoles());
-			Map<Object, Object> model = new HashMap<>();
-			System.out.println(token);
-
-			model.put("user", salesRepository.getUserByPhone(username));
-			model.put("rescode", 200);
-			model.put("susmsg", "OK");
-			model.put("token", token);
-			System.out.println(model.toString());
-			return ok(model);
-		} catch (AuthenticationException e) {
-			throw new BadCredentialsException("Invalid email/password supplied");
-		}
-	}
-
-	@SuppressWarnings("rawtypes")
-	@PostMapping("/register")
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public ResponseEntity register(@RequestBody User user) {
-		User userExists = userService.findUserByPhone(user.getPhone());
-		if (userExists != null) {
-			throw new BadCredentialsException("User with username: " + user.getPhone() + " already exists");
-		}
-		userService.saveUser(user);
-		Map<Object, Object> model = new HashMap<>();
-		model.put("message", "User registered successfully");
-		return ok(model);
-	}
-
-	@RequestMapping(value = "/syncAllDataFromMysql", method = RequestMethod.POST)
-	@CrossOrigin(origins = "http://65.2.89.128:3000")
-	public boolean syncAllDataFromMysql() {
-
-		String id = "", name = "", phone = "", email = "", subdate = "", gender = "", age = "", date = "";
-
-		try {
-
-			FileReader filereader = new FileReader("/OTT/user.csv");
-			CSVReader csvReader = new CSVReaderBuilder(filereader).withSkipLines(1).build();
-			List<String[]> allData = csvReader.readAll();
-			List<User> users = new ArrayList<>();
-			// print Data
-			for (String[] row : allData) {
-				int i = 0;
-				for (String cell : row) {
-					if (i == 0) {
-						id = cell;
-					} else if (i == 2) {
-						age = cell;
-					} else if (i == 3) {
-						name = cell;
-					} else if (i == 4) {
-						email = cell;
-					} else if (i == 5) {
-						phone = cell;
-					}
-					System.out.print(cell + "\t");
-					i++;
-				}
-
-				if (age.isEmpty()) {
-					users.add(new User(Integer.valueOf(id), name, email, 18, null, "key", "+91" + phone, null, null,
-							LocalDate.now(), LocalDate.now(), LocalDate.now(), null, null));
-
-				} else {
-					users.add(new User(Integer.valueOf(id), name, email, 18, null, "key", "+91" + phone, null, null,
-							LocalDate.now(), LocalDate.now(), LocalDate.now(), null, null));
-
-				}
-
-				System.out.println();
-			}
-
-			System.out.println(users.size());
-			FileReader filereader1 = new FileReader("/OTT/subscription.csv");
-			CSVReader csvReader1 = new CSVReaderBuilder(filereader1).withSkipLines(1).build();
-			List<String[]> allData1 = csvReader1.readAll();
-			List<sub> users1 = new ArrayList<>();
-			UserType ut;
-			String subType = "", userid = "", amount = "", fromdate = "", expdate = "";
-			for (String[] row1 : allData1) {
-				int i = 0;
-				for (String cell1 : row1) {
-					if (i == 1) {
-						subType = cell1;
-					} else if (i == 2) {
-						userid = cell1;
-					} else if (i == 4) {
-						amount = cell1;
-					} else if (i == 5) {
-						fromdate = cell1;
-					} else if (i == 6) {
-						expdate = cell1;
-					}
-					System.out.print(cell1 + "\t");
-					i++;
-				}
-				users1.add(new sub(userid, fromdate, amount, expdate, subType));
-				System.out.println();
-			}
-			List<sub> lst = new ArrayList<>();
-			Map<String, sub> lmap = new HashMap<>();
-			for (sub s : users1) {
-				DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-				Date date1 = new Date(Long.valueOf(s.getDateTo()) * 1000);
-				if (date1.after(new Date())) {
-					lmap.put(s.getId(), s);
-					lst.add(s);
-					System.out.println(format.format(date1));
-				}
-			}
-			List<User> userList = new ArrayList<>();
-			Date date1 = null;
-			Date date2 = null;
-			DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-			Role userRole = salesRepository.getRole("USER");
-			for (User u : users) {
-				int flag = 0;
-				for (int i = 0; i < lst.size(); i++) {
-					if (u.getId() == Integer.valueOf(lst.get(i).getId())) {
-						sub s = lst.get(i);
-						date1 = new Date(Long.valueOf(s.getDateTo()) * 1000);
-						date2 = new Date(Long.valueOf(s.getDatefrom()) * 1000);
-						u.setPayments(
-								new com.gamotrance.OTT.Model.Payment(u.getId(), s.getAmount(), cut(s.getType()).value,
-										LocalDate.parse(format.format(date2)), LocalDate.parse(format.format(date2))));
-
-						u.setUserType(cut(s.getType()));
-						u.setRoles(new HashSet<>(Arrays.asList(userRole)));
-						u.setSuscriptionDate(LocalDate.parse(format.format(date2)));
-						u.setExpdate(format.format(date1));
-						userList.add(u);
-						flag = 1;
-						break;
-					}
-				}
-				if (flag == 0) {
-					u.setRoles(new HashSet<>(Arrays.asList(userRole)));
-					u.setUserType(UserType.BASIC);
-					userList.add(u);
-				}
-
-				System.out.println(u.toString());
-			}
-			System.out.println(userList.size());
-			salesRepository.saveAll(userList);
-			return true;
-		} catch (Exception e) {
-
-			e.printStackTrace();
-			return false;
-		}
-	}
-
+	
 	public UserType cut(String st) {
 		UserType ut;
 		switch (st) {

@@ -136,79 +136,12 @@ public class VideoController {
 
 	}
 
-//  	@RequestMapping(value = "/send", method = RequestMethod.GET, produces = "application/json")
-//  	public ResponseEntity send() throws JSONException {
-//
-//  		JSONObject body = new JSONObject();
-//  		body.put("to", "/topics/" + TOPIC);
-//  		body.put("priority", "high");
-//
-//  		JSONObject notification = new JSONObject();
-//  		notification.put("title", "JSA Notification");
-//  		notification.put("body", "Happy Message!");
-//  		
-//  		JSONObject data = new JSONObject();
-//  		data.put("Key-1", "JSA Data 1");
-//  		data.put("Key-2", "JSA Data 2");
-//
-//  		body.put("notification", notification);
-//  		body.put("data", data);
-//
-//  /**
-//  		{
-//  		   "notification": {
-//  		      "title": "JSA Notification",
-//  		      "body": "Happy Message!"
-//  		   },
-//  		   "data": {
-//  		      "Key-1": "JSA Data 1",
-//  		      "Key-2": "JSA Data 2"
-//  		   },
-//  		   "to": "/topics/JavaSampleApproach",
-//  		   "priority": "high"
-//  		}
-//  */
-//
-//  		HttpEntity request = new HttpEntity<>(body.toString());
-//
-//  		CompletableFuture pushNotification = PushNotificationService.send(request);
-//  		CompletableFuture.allOf(pushNotification).join();
-//
-//  		try {
-//  			String firebaseResponse = pushNotification.get();
-//  			
-//  			return new ResponseEntity<>(firebaseResponse, HttpStatus.OK);
-//  		} catch (InterruptedException e) {
-//  			e.printStackTrace();
-//  		} catch (ExecutionException e) {
-//  			e.printStackTrace();
-//  		}
-//
-//  		return new ResponseEntity<>("Push Notification ERROR!", HttpStatus.BAD_REQUEST);
-//  	}
-//      @RequestMapping(value="/send-notification",method = RequestMethod.POST)
-//      @ResponseBody
-//      public String sendNotification(@RequestBody Note note,
-//                                     @RequestParam String topic) throws FirebaseMessagingException {
-//          return firebaseService.sendNotification(note, topic);
-//      }
-//      
-	// @Cacheable(value = "getAllSingleVideo")
 	@RequestMapping(value = "/getAllVideo", method = RequestMethod.GET)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public List<SingleVideo> getAllSingleVideo() {
 		return salesRepository.getAllSingleVideo();
 	}
 
-//      @RequestMapping(value = "/getAllVideoByCountry", method = RequestMethod.GET)
-//  	public List<SingleVideo> getAllSingleVideo(String country){
-//    	  List<SingleVideo> list=new ArrayList<SingleVideo>();
-//    	  for(int id:countryVideoDecoedServices.getHomePagerContainer(country))
-//    	  {
-//    		  list.add(salesRepository.getVideoById(id));
-//    	  }
-//  		return list;
-//  	}
 	@Cacheable(value = "singlevideo", key = "#id", unless = "#result.likes < 500")
 	@RequestMapping(value = "/getVideoById/{id}/", method = RequestMethod.GET)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
@@ -341,10 +274,10 @@ public class VideoController {
 					.addLike(new Likes(LocalDate.now().toString().concat(userId.toString()).hashCode(), userId, vodId));
 			SingleVideo sgVdo = salesRepository.updateSingleVideo(sv);
 
-			return new ResponseEntity("your liked submited", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your liked submited", HttpStatus.ACCEPTED);
 		} else {
 			SingleVideo singleVideo = salesRepository.getVideoById(Integer.valueOf(vodId));
-			return new ResponseEntity("your already liked this video", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your already liked this video", HttpStatus.ACCEPTED);
 		}
 
 	}
@@ -356,7 +289,7 @@ public class VideoController {
 		Likes lk = likesServices.getLikesExistance(userId, vodId);
 		if (lk == null) {
 			SingleVideo singleVideo = salesRepository.getVideoById(Integer.valueOf(vodId));
-			return new ResponseEntity("your already liked this video", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your already liked this video", HttpStatus.ACCEPTED);
 		} else {
 			SingleVideo singleVideo = salesRepository.getVideoById(Integer.valueOf(vodId));
 			Long vi = singleVideo.getLikes();
@@ -372,7 +305,7 @@ public class VideoController {
 			likesServices.deleteLike(lk);
 			SingleVideo sgVdo = salesRepository.updateSingleVideo(sv);
 
-			return new ResponseEntity("your dislike submited", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your dislike submited", HttpStatus.ACCEPTED);
 
 		}
 
@@ -400,10 +333,10 @@ public class VideoController {
 					new DisLike(LocalDate.now().toString().concat(userId.toString()).hashCode(), userId, vodId));
 			SingleVideo sgVdo = salesRepository.updateSingleVideo(sv);
 
-			return new ResponseEntity("your liked submited", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your liked submited", HttpStatus.ACCEPTED);
 		} else {
 			SingleVideo singleVideo = salesRepository.getVideoById(Integer.valueOf(vodId));
-			return new ResponseEntity("your already liked this video", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your already liked this video", HttpStatus.ACCEPTED);
 		}
 
 	}
@@ -415,7 +348,7 @@ public class VideoController {
 		DisLike lk = disLikeSevices.getDisLikeExistance(userId, vodId);
 		if (lk == null) {
 			SingleVideo singleVideo = salesRepository.getVideoById(Integer.valueOf(vodId));
-			return new ResponseEntity("your already liked this video", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your already liked this video", HttpStatus.ACCEPTED);
 		} else {
 			SingleVideo singleVideo = salesRepository.getVideoById(Integer.valueOf(vodId));
 			Long vi = singleVideo.getDisLike();
@@ -431,7 +364,7 @@ public class VideoController {
 			disLikeSevices.deleteDisLike(lk);
 			SingleVideo sgVdo = salesRepository.updateSingleVideo(sv);
 
-			return new ResponseEntity("your dislike submited", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("your dislike submited", HttpStatus.ACCEPTED);
 
 		}
 
@@ -441,7 +374,7 @@ public class VideoController {
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> getLikes(@PathVariable String userId, UriComponentsBuilder ucBuilder) {
 		// SingleVideo singleVideo=salesRepository.getVideoById(Integer.valueOf(vodId));
-		return new ResponseEntity(likesServices.getLikesByUser(userId), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(likesServices.getLikesByUser(userId), HttpStatus.ACCEPTED);
 
 	}
 
@@ -519,10 +452,10 @@ public class VideoController {
 		if (remindMeServices.addRemindMe(userId, vodId)) {
 			// logger.error("Unable to create. A User with name {} already exist",
 			// user.getName());
-			return new ResponseEntity(new CustomErrorType("User " + userId + " Unable to Add Remind To This Video "),
+			return new ResponseEntity<>(new CustomErrorType("User " + userId + " Unable to Add Remind To This Video "),
 					HttpStatus.CONFLICT);
 		} else {
-			return new ResponseEntity("User " + userId + " Added Remind To This Video ", HttpStatus.CREATED);
+			return new ResponseEntity<>("User " + userId + " Added Remind To This Video ", HttpStatus.CREATED);
 		}
 
 	}
@@ -531,14 +464,12 @@ public class VideoController {
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> updateRemindMe(@PathVariable String vodId, @PathVariable String userId,
 			UriComponentsBuilder ucBuilder) {
-		// logger.info("Creating User : {}", user);
 
 		if (remindMeServices.updateRemindMe(userId, vodId)) {
-			// logger.error("Unable to create. A User with name {} already exist",
-			// user.getName());
-			return new ResponseEntity("User " + userId + " Deleted Video From Remind List ", HttpStatus.ACCEPTED);
+		
+			return new ResponseEntity<>("User " + userId + " Deleted Video From Remind List ", HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity(new CustomErrorType("Video " + vodId + " Not exist on List "),
+			return new ResponseEntity<>(new CustomErrorType("Video " + vodId + " Not exist on List "),
 					HttpStatus.CONFLICT);
 		}
 
@@ -547,60 +478,50 @@ public class VideoController {
 	@RequestMapping(value = "/getRemindList/{userId}", method = RequestMethod.GET)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> getRemindList(@PathVariable String userId, UriComponentsBuilder ucBuilder) {
-		// logger.info("Creating User : {}", user);
-
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
-		return new ResponseEntity(remindMeServices.getRemindList(userId), HttpStatus.ACCEPTED);
+		
+		return new ResponseEntity<>(remindMeServices.getRemindList(userId), HttpStatus.ACCEPTED);
 
 	}
 
 	@RequestMapping(value = "/getContVideoList/{userId}", method = RequestMethod.GET)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> getContVideoList(@PathVariable String userId, UriComponentsBuilder ucBuilder) {
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
-		return new ResponseEntity(contVideoServices.getContVideoList(userId), HttpStatus.ACCEPTED);
+	
+		return new ResponseEntity<>(contVideoServices.getContVideoList(userId), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/getVideoByVideoType/{vodType}", method = RequestMethod.GET)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> getVideoByVideoType(@PathVariable String vodType, UriComponentsBuilder ucBuilder) {
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
-		return new ResponseEntity(salesRepository.getVideoByVodType(vodType), HttpStatus.ACCEPTED);
+		
+		return new ResponseEntity<>(salesRepository.getVideoByVodType(vodType), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/allDeleteContWatch", method = RequestMethod.DELETE)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> allDeleteContWatch(UriComponentsBuilder ucBuilder) {
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
-		return new ResponseEntity(contVideoServices.deleteAll(), HttpStatus.ACCEPTED);
+		
+		return new ResponseEntity<>(contVideoServices.deleteAll(), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/updateDeleteVideoByUser/", method = RequestMethod.PATCH)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> updateDeleteVideoByUser(@RequestBody ContVideo contVideo, UriComponentsBuilder ucBuilder) {
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
-		return new ResponseEntity(contVideoServices.updateVideoByUser(contVideo), HttpStatus.ACCEPTED);
+		
+		return new ResponseEntity<>(contVideoServices.updateVideoByUser(contVideo), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/updateSaveVideoByUser/{vodId}/{userId}", method = RequestMethod.PATCH)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> updateSaveVideoByUser(@PathVariable String vodId, @PathVariable String userId,
 			UriComponentsBuilder ucBuilder) {
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
-		return new ResponseEntity(contVideoServices.updateVideoByUser(vodId, userId), HttpStatus.ACCEPTED);
+		
+		return new ResponseEntity<>(contVideoServices.updateVideoByUser(vodId, userId), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/addContWatching", method = RequestMethod.PATCH)
 	@CrossOrigin(origins = "http://65.2.89.128:3000")
 	public ResponseEntity<?> addContWatching(@RequestBody ContVideo contVideo, UriComponentsBuilder ucBuilder) {
-		// logger.error("Unable to create. A User with name {} already exist",
-		// user.getName());
 
 		SingleVideo s = salesRepository.getVideoById(Integer.valueOf(contVideo.getVodId()));
 		System.out.println("user " + s.toString());
@@ -631,7 +552,7 @@ public class VideoController {
 			model.put("susmsg", "We are Unable to The Video Aassociate With This Id:" + contVideo.getId());
 			return ok(model);
 		}
-		return new ResponseEntity(contVideoServices.updateVideoByUser(ct), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(contVideoServices.updateVideoByUser(ct), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/SyncAllVideo", method = RequestMethod.PATCH)
@@ -712,9 +633,9 @@ public class VideoController {
 		if (list != null) {
 			// logger.error("Unable to create. A User with name {} already exist",
 			// user.getName());
-			return new ResponseEntity(new VideoResponse("OK", "200", list), HttpStatus.ACCEPTED);
+			return new ResponseEntity<>(new VideoResponse("OK", "200", list), HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity(new VideoResponse(
+			return new ResponseEntity<>(new VideoResponse(
 					"Sorry Not Found any List on Database that Associated With " + generName + "Geners", "409", list),
 					HttpStatus.CONFLICT);
 		}
@@ -731,9 +652,9 @@ public class VideoController {
 		if (list != null) {
 			// logger.error("Unable to create. A User with name {} already exist",
 			// user.getName());
-			return new ResponseEntity(new VideoResponse("OK", "200", list), HttpStatus.ACCEPTED);
+			return new ResponseEntity<>(new VideoResponse("OK", "200", list), HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity(new VideoResponse(
+			return new ResponseEntity<>(new VideoResponse(
 					"Sorry Not Found any List on Database that Associated With " + catogary + "Catogary", "409", list),
 					HttpStatus.CONFLICT);
 		}
@@ -747,9 +668,9 @@ public class VideoController {
 		// logger.info("Creating User : {}", user);
 
 		if (videoCatListServices.getVideoCatListByIdExist(0)) {
-			return new ResponseEntity(videoCatListServices.getVideoCatListById(0), HttpStatus.ACCEPTED);
+			return new ResponseEntity<>(videoCatListServices.getVideoCatListById(0), HttpStatus.ACCEPTED);
 		} else {
-			return new ResponseEntity(
+			return new ResponseEntity<>(
 					new VideoCatList(null, "Sorry Not Found any List on Database that Associated With Catogary", "409"),
 					HttpStatus.CONFLICT);
 		}
@@ -761,7 +682,7 @@ public class VideoController {
 	public ResponseEntity<?> addWatchList(@RequestBody WatchList watchList, UriComponentsBuilder ucBuilder) {
 		// logger.error("Unable to create. A User with name {} already exist",
 		// user.getName());
-		return new ResponseEntity(watchListServices.addContVideo(watchList), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(watchListServices.addContVideo(watchList), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/getWatchList/{id}", method = RequestMethod.GET)
@@ -777,7 +698,7 @@ public class VideoController {
 			dlist.add(new DashResponse(s.getId(), s.getThumbs(), s.getTitle(), s.getVideoType(), s.getmThumbs()));
 		}
 
-		return new ResponseEntity(dlist, HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(dlist, HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/removeWatchList", method = RequestMethod.DELETE)
@@ -785,7 +706,7 @@ public class VideoController {
 	public ResponseEntity<?> removeWatchList(@RequestBody WatchList watchList, UriComponentsBuilder ucBuilder) {
 		// logger.error("Unable to create. A User with name {} already exist",
 		// user.getName());
-		return new ResponseEntity(watchListServices.deleteContVideo(watchList), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(watchListServices.deleteContVideo(watchList), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/addFavourite", method = RequestMethod.POST)
@@ -793,7 +714,7 @@ public class VideoController {
 	public ResponseEntity<?> addFavouriteList(@RequestBody Favourite watchList, UriComponentsBuilder ucBuilder) {
 		// logger.error("Unable to create. A User with name {} already exist",
 		// user.getName());
-		return new ResponseEntity(favouriteServices.addFavourite(watchList), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(favouriteServices.addFavourite(watchList), HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/getFavouriteList/{id}", method = RequestMethod.GET)
@@ -811,11 +732,11 @@ public class VideoController {
 				dlist.add(new DashResponse(s.getId(), s.getThumbs(), s.getTitle(), s.getVideoType(), s.getmThumbs()));
 			}
 		} else {
-			return new ResponseEntity(new CustomErrorType("We Don't Found List With this UserId " + id),
+			return new ResponseEntity<>(new CustomErrorType("We Don't Found List With this UserId " + id),
 					HttpStatus.CONFLICT);
 		}
 
-		return new ResponseEntity(dlist, HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(dlist, HttpStatus.ACCEPTED);
 	}
 
 	@RequestMapping(value = "/removeFavouriteList", method = RequestMethod.DELETE)
@@ -823,7 +744,7 @@ public class VideoController {
 	public ResponseEntity<?> removeFavouriteList(@RequestBody Favourite watchList, UriComponentsBuilder ucBuilder) {
 		// logger.error("Unable to create. A User with name {} already exist",
 		// user.getName());
-		return new ResponseEntity(favouriteServices.deleteFavourite(watchList), HttpStatus.ACCEPTED);
+		return new ResponseEntity<>(favouriteServices.deleteFavourite(watchList), HttpStatus.ACCEPTED);
 	}
 
 }

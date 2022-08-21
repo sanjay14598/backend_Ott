@@ -66,15 +66,7 @@ public class OttUtil {
 	}
 
 	public SingleVideo getConvert(RowVideo rowVideo) {
-		/*
-		 * public SingleVideo(int id, @NotNull String title, @NotNull String
-		 * description, Long likes, int channelId, List<Cast> casts, List<Genre> genres,
-		 * Tralier tralier, List<Director> directors, List<Video> eps, List<Writer>
-		 * writer, Long views, VideoType videoType, String thumbs, PeerType peerType,
-		 * int ageGroup, String partNumber, String vdoUrl, List<Thumb> mThumbs, Double
-		 * duration, String upcommingDate, List<String> countryList)
-		 */
-
+		
 		List<Cast> casts = new ArrayList<>();
 		casts.add(new Cast(0, rowVideo.getCasts(), null));
 		List<Genre> genres = new ArrayList<>();
@@ -90,29 +82,10 @@ public class OttUtil {
 		trl.add(tralier);
 		List<String> langs = new ArrayList<>();
 		langs.add(rowVideo.getLang());
-		/*
-		 * Tralier tralier=new Tralier(0, rowVideo.getThumbs(),
-		 * rowVideo.getTralierUrl(), null, null); SingleVideo s=new
-		 * SingleVideo(LocalDateTime.now().hashCode(), rowVideo.getTitle(),
-		 * rowVideo.getDescription(), (long)0, 0, casts, genres, tralier, directors,
-		 * null, writer, (long)0, rowVideo.getVideoType(),rowVideo.getLang(),
-		 * rowVideo.getThumbs(), null, rowVideo.getAgeGroup(), null,
-		 * rowVideo.getVdoUrl(), mThumbs, null, null, null);
-		 */
-
+		
 		SingleVideo s = new SingleVideo(LocalDateTime.now().hashCode(), rowVideo.getTitle(), rowVideo.getDescription(),
 				casts, genres, trl, directors, null, writer, rowVideo.getVideoType(), rowVideo.getThumbs(), null, 2,
 				rowVideo.getVdoUrl(), null);
-		/*
-		 * (int id, @NotNull String title, @NotNull String description, List<Genre>
-		 * genres, List<String> lang, String thumbs, String partNumber, String vdoUrl)
-		 */
-		/*
-		 * (int id, @NotNull String title, @NotNull String description, List<Cast>
-		 * casts, List<Genre> genres, List<Tralier> tralier, List<Director> directors,
-		 * List<Video> eps, List<Writer> writer, VideoType videoType, String thumbs,
-		 * List<Cataogry> peerType, int ageGroup, String vdoUrl, List<Thumb> mThumbs)
-		 */
 
 		return s;
 

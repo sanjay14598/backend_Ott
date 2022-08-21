@@ -42,7 +42,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	http.csrf().disable();
 	
 	
-	
+	//TODO: Uncomment this line for JWT
 	
 //	  http.httpBasic().disable().csrf().disable().sessionManagement()
 //	  .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -69,7 +69,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 	}
 
 	
-	
+	//TODO: Uncomment this line for JWT
 //	
 //	  @Override public void configure(WebSecurity web) throws Exception {
 //	  web.ignoring().antMatchers("/swagger-resources/**")//
