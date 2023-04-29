@@ -42,6 +42,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableConfigurationProperties({
 		FileStorageProperties.class
 })
+//@EnableFeignClients
 @SpringBootApplication
 @EnableScheduling
 @EnableCaching

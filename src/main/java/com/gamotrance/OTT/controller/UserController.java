@@ -33,6 +33,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -113,6 +114,9 @@ public class UserController {
 
 	@Autowired
 	AuthenticationManager authenticationManager;
+	
+	@Autowired
+	private PasswordEncoder bCryptPasswordEncoder;
 
 	@Autowired
 	JwtTokenProvider jwtTokenProvider;
@@ -244,6 +248,7 @@ public class UserController {
 					new CustomErrorType("Unable to create. A User with name " + user.getPhone() + " already exist."),
 					HttpStatus.CONFLICT);
 		}
+		 user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
 		salesRepository.createAccount(user);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setLocation(ucBuilder.path("/api/getUserById/{id}").buildAndExpand(user.getId()).toUri());
@@ -767,6 +772,42 @@ public class UserController {
 		salesRepository.syncAll(pojoObjList);
 		return true;
 		// return salesRepository.deleteAllUser();
+	}
+	
+	@SuppressWarnings("rawtypes")
+	@PostMapping("/loginUser")
+	@CrossOrigin(origins = "http://65.2.89.128:3000")
+	public ResponseEntity<?> loginUser(@RequestBody AuthBody authBody) {
+		try {
+
+			String username = authBody.getEmail();
+			User user = salesRepository.getUserByPhone(username);
+			if (null == user) {
+//				Map<Object, Object> model = new HashMap<>();
+//				model.put("rescode", 201);
+//				model.put("resMsg", "User not found with this " + user.getPhone() + " number.");
+				return new ResponseEntity(
+						new CustomErrorType("User not found with this " + username + " number."),
+						HttpStatus.CREATED);
+			}
+			
+			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+			if (!encoder.matches(authBody.getPassword(), user.getPassword())) {
+//				Map<Object, Object> model = new HashMap<>();
+//				model.put("rescode", 202);
+//				model.put("susmsg", "Password Not Match");
+//				return ok(model);
+				
+				return new ResponseEntity(
+						new CustomErrorType("Password not match with this " + username + " number."),
+						HttpStatus.CONFLICT);
+			}
+			return ok(user);
+			
+		}catch (AuthenticationException e) {
+			throw new BadCredentialsException("Invalid email/password supplied");
+		}
+			
 	}
 
 	@SuppressWarnings("rawtypes")

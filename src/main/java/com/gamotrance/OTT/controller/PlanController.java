@@ -4,23 +4,37 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.gamotrance.OTT.Doa.CashFreeResponse;
+import com.gamotrance.OTT.Model.CashFreeRequest;
+import com.gamotrance.OTT.Model.Checksum;
 import com.gamotrance.OTT.Model.Plan;
 import com.gamotrance.OTT.services.PlanServices;
+import com.google.gson.Gson;
+import com.paytm.pg.merchant.PaytmChecksum;
 
 @RestController
 @RequestMapping(value = "/Plan")
 public class PlanController {
 
+//	@Autowired CashfreeClient cashfreeClient;
+//	@Value("${cashfee.id}")
+//	String id;
+//	@Value("${cashfee.key}")
+//	String key;
 	private final Logger LOG = LoggerFactory.getLogger(getClass());
 
 	private final PlanServices planServices;
@@ -125,5 +139,14 @@ public class PlanController {
 	public printOutput getStreamWrapper(InputStream is, String type) {
 		return new printOutput(is, type);
 	}
+	
+	
+//	@RequestMapping(value = "/getToken", method = RequestMethod.GET)
+//	public CashFreeResponse getToken(@PathVariable("amount") String amount) {
+//		LOG.info("get token of cashfree.");
+//		return cashfreeClient.createToken(id, key, new CashFreeRequest("38833", amount, "INR"));
+//
+//	}
+
 
 }
